@@ -1,0 +1,16 @@
+.idea
+.vscode
+
+config_test.json
+*~
+*.bak
+*.dll
+*.dylib
+*.exe
+*.exe~
+*.out
+*.so
+*.swp
+*.tmp
+*.test
+*.un~
