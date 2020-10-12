@@ -27,22 +27,27 @@ func TestClient_Login(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	t.Logf("client.GetCurrentInfo() - %#v", client.currentInfo)
 }
 
 func TestClient_GetRegions(t *testing.T) {
 	regions, _ := GetRegions()
 	t.Logf(":: size - %d", len(regions))
-	for _, r := range regions {
-		t.Logf("  :: %d - %s", r.ID, r.Name)
+	if DEBUG {
+		for _, r := range regions {
+			t.Logf("  :: %d - %s", r.ID, r.Name)
+		}
 	}
 }
 
 func TestClient_GetSchool(t *testing.T) {
 	schools, _ := GetSchools(cfg.RegionID)
 	t.Logf(":: size - %d", len(schools))
-	for _, school := range schools {
-		sj, _ := json.Marshal(school)
-		t.Logf(":: %s\n", string(sj))
+	if DEBUG {
+		for _, school := range schools {
+			sj, _ := json.Marshal(school)
+			t.Logf(":: %s\n", string(sj))
+		}
 	}
 }
 
@@ -54,8 +59,10 @@ func TestClient_GetMarks(t *testing.T) {
 func TestClient_GetMarksPeriods(t *testing.T) {
 	periods, _ := client.GetMarksPeriods()
 	t.Logf(":: size - %d", len(periods))
-	for _, p := range periods {
-		t.Logf(":: period - %s", p)
+	if DEBUG {
+		for _, p := range periods {
+			t.Logf(":: period - %s", p)
+		}
 	}
 }
 
@@ -100,9 +107,11 @@ func TestClient_GetHomework(t *testing.T) {
 	client.SetCookie("edu_year", "")
 	hws, _ := client.GetHomework()
 	t.Logf(":: size - %d", len(hws))
-	for _, hw := range hws {
-		hwj, _ := json.Marshal(hw)
-		t.Logf("  :: %s\n", string(hwj))
+	if DEBUG {
+		for _, hw := range hws {
+			hwj, _ := json.Marshal(hw)
+			t.Logf("  :: %s\n", string(hwj))
+		}
 	}
 }
 
@@ -116,27 +125,29 @@ func TestClient_GetCourses(t *testing.T) {
 	client.GetMarksPeriods()
 	courses2018, _ := client.GetCourses()
 	courses = append(courses, courses2018...)
-	t.Logf(":: size - %d", len(courses))
+	t.Logf(":: size for 2018 - %d", len(courses))
 
 	client.SetCookie("edu_year", "2017")
 	client.GetCurrentInfo()
 	client.GetMarksPeriods()
 	courses2017, _ := client.GetCourses()
 	courses = append(courses, courses2017...)
-	t.Logf(":: size - %d", len(courses2017))
+	t.Logf(":: size for 2017 - %d", len(courses2017))
 
 	client.SetCookie("edu_year", "2016")
 	client.GetCurrentInfo()
 	client.GetMarksPeriods()
 	courses2016, _ := client.GetCourses()
 	courses = append(courses, courses2016...)
-	t.Logf(":: size - %d", len(courses2016))
+	t.Logf(":: size for 2016 - %d", len(courses2016))
 
 	courses = unique(courses)
 	t.Logf(":: total size - %d", len(courses))
-	for _, course := range courses {
-		cj, _ := json.Marshal(course)
-		t.Logf("  :: %s\n", string(cj))
+	if DEBUG {
+		for _, course := range courses {
+			cj, _ := json.Marshal(course)
+			t.Logf("  :: %s\n", string(cj))
+		}
 	}
 }
 

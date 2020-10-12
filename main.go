@@ -93,7 +93,7 @@ func (cli *Client) Login() (err error) {
 	if err != nil {
 		return
 	}
-	cli.Token, _ = doc.Find("#login_form > input[name='csrfmiddlewaretoken']").First().Attr("value")
+	cli.Token, _ = doc.Find(".login__form > input[name='csrfmiddlewaretoken']").First().Attr("value")
 	if DEBUG {
 		log.Printf("csrfmiddlewaretoken - %s\n", cli.Token)
 	}
@@ -149,7 +149,6 @@ func (cli *Client) GetCurrentInfo() (err error) {
 	doc, err := goquery.NewDocumentFromResponse(resp)
 
 	cli.currentInfo.SchoolID = cli.SchoolID
-
 	classNumber, classChar, err := getClassName(doc.Find("#auth_info > #role").Text())
 	if err != nil {
 		return
