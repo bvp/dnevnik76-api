@@ -1,8 +1,4 @@
-// dnevnik76-api project doc.go
-
-/*
-dnevnik76-api document
-*/
+// Package dnevnik76 doc
 package dnevnik76
 
 /* Сообщения

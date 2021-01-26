@@ -1,3 +1,4 @@
+// Package dnevnik76 model
 package dnevnik76
 
 import (
@@ -6,6 +7,7 @@ import (
 	"time"
 )
 
+// Client struct
 type Client struct {
 	Username    string       `json:"login"`
 	Password    string       `json:"password"`
@@ -15,6 +17,7 @@ type Client struct {
 	currentInfo CurrentInfo  `xorm:"-"`
 }
 
+// CurrentInfo struct
 type CurrentInfo struct {
 	//PersonID     int64  `json:"personId" xorm:"'person_id'"`
 	SchoolID     int64  `json:"schoolId" xorm:"'school_id'"`
@@ -25,11 +28,13 @@ type CurrentInfo struct {
 	EduYearEnd   int    `json:"eduYearEnd"`
 }
 
+// Region struct
 type Region struct {
 	ID   int64  `json:"id" xorm:"pk 'id'"`
 	Name string `json:"name" xorm:"'name'"`
 }
 
+// School struct
 type School struct {
 	ID       int64  `json:"id" xorm:"pk 'id'"`
 	RegionID int64  `json:"regionId" xorm:"'region_id'"`
@@ -37,6 +42,7 @@ type School struct {
 	Type     string `json:"type"`
 }
 
+// Teacher struct
 type Teacher struct {
 	ID         int64  `json:"id" xorm:"pk autoincr 'id'"`
 	UserID     string `json:"userId" xorm:"'user_id'"`
@@ -46,11 +52,13 @@ type Teacher struct {
 	CourseName string `json:"courseName"`
 }
 
+// Course struct
 type Course struct {
 	ID   int64  `json:"id" xorm:"pk 'id'"`
 	Name string `json:"name"`
 }
 
+// Schedule struct
 type Schedule struct {
 	ID        int64     `json:"id" xorm:"pk autoincr 'id'"`
 	SchoolID  int64     `json:"schoolId" xorm:"'school_id'"`
@@ -62,6 +70,7 @@ type Schedule struct {
 	Date      time.Time `json:"date"`
 }
 
+// Homework struct
 type Homework struct {
 	ID         int64     `json:"id" xorm:"pk autoincr 'id'"`
 	SchoolID   int64     `json:"schoolId" xorm:"'school_id'"`
@@ -74,6 +83,7 @@ type Homework struct {
 	Subject    string    `json:"subject"`
 }
 
+// Lperiod struct
 type Lperiod struct {
 	SchoolID int64  `json:"schoolId" xorm:"'school_id'"`
 	SYear    int    `json:"start_year"`
@@ -91,6 +101,7 @@ func (p Lperiod) String() string {
 	return string(out)
 }
 
+// Mark struct
 type Mark struct {
 	ID         int64     `json:"id" xorm:"pk autoincr 'id'"`
 	UserID     string    `json:"userId" xorm:"'user_id'"`
@@ -117,6 +128,7 @@ func (m Mark) String() string {
 	return string(out)
 }
 
+// Message struct
 type Message struct {
 	ID       int64     `json:"id" xorm:"pk 'id'"`
 	UserID   string    `json:"userId" xorm:"'user_id'"`
@@ -127,11 +139,15 @@ type Message struct {
 	Body     string    `json:"body"`
 }
 
+// MarksListType type
 type MarksListType int
 
 const (
+	// Note type
 	Note MarksListType = iota
+	// List type
 	List
+	// Date type
 	Date
 )
 
@@ -139,20 +155,33 @@ func (s MarksListType) String() string {
 	return [...]string{"note", "list", "date"}[s]
 }
 
+// MarkRange in month
 type MarkRange int
 
 const (
+	// Month9 is September
 	Month9 MarkRange = iota
+	// Month10 is October
 	Month10
+	// Month11 is November
 	Month11
+	// Month12 is December
 	Month12
+	// Month1 is January
 	Month1
+	// Month2 is Febrary
 	Month2
+	// Month3 is March
 	Month3
+	// Month4 is April
 	Month4
+	// Month5 is May
 	Month5
+	// Month6 is June
 	Month6
+	// Month7 is July
 	Month7
+	// Month8 is August
 	Month8
 )
 

@@ -94,9 +94,6 @@ func (cli *Client) Login() (err error) {
 		return
 	}
 	cli.Token, _ = doc.Find(".login__form > input[name='csrfmiddlewaretoken']").First().Attr("value")
-	if DEBUG {
-		log.Printf("csrfmiddlewaretoken - %s\n", cli.Token)
-	}
 
 	payload := url.Values{
 		"next":                {""}, // /marks/current/
@@ -125,17 +122,6 @@ func (cli *Client) Login() (err error) {
 		return
 	}
 
-	if DEBUG {
-		h1 := doc.Find("#logo > h1").First()
-		log.Printf("%s", h1.Text())
-	}
-
-	// redirected := resp.Request.URL.String()
-	// log.Printf("redirected: %s", redirected)
-	// if redirected != urlLoginSuccess {
-	// 	return errors.New("redirected to not success url")
-	// }
-
 	err = cli.GetCurrentInfo()
 
 	return
@@ -143,8 +129,6 @@ func (cli *Client) Login() (err error) {
 
 // GetCurrentInfo for session
 func (cli *Client) GetCurrentInfo() (err error) {
-	// ci := CurrentInfo{}
-
 	resp, err := cli.http.Get(urlHomework)
 	doc, err := goquery.NewDocumentFromResponse(resp)
 
@@ -153,18 +137,12 @@ func (cli *Client) GetCurrentInfo() (err error) {
 	if err != nil {
 		return
 	}
-	if DEBUG {
-		log.Printf("className - %d%s\n", classNumber, classChar)
-	}
 	cli.currentInfo.ClassNumber = classNumber
 	cli.currentInfo.ClassChar = classChar
 
 	classIDText, _ := doc.Find("body").Attr("onload")
 	if classIDText != "" {
 		classIDText = strings.TrimRight(strings.TrimLeft(classIDText, "loadSubjects('/ajax/subj/"), "', true)")
-		if DEBUG {
-			log.Printf("class_id - %s\n", classIDText)
-		}
 	}
 	classID, err := strconv.ParseInt(classIDText, 10, 32)
 	cli.currentInfo.ClassID = classID
@@ -176,17 +154,7 @@ func (cli *Client) GetCurrentInfo() (err error) {
 	cli.currentInfo.EduYearStart = int(eys)
 	cli.currentInfo.EduYearEnd = int(eye)
 
-	// log.Printf("eduyear - %s\n", eyr)
-
-	// for _, cookie := range cli.http.Jar.Cookies(u) {
-	// 	if cookie.Name == "edu_year" {
-	// 		cli.currentInfo.EduYearStart = cookie.Value
-	// 	}
-	// }
-
 	cli.ToJSON(cli.currentInfo)
-	// cli.currentInfo = ci
-	// cli.ToJSON(cli.currentInfo)
 
 	return
 }
@@ -195,9 +163,6 @@ func (cli *Client) GetCurrentInfo() (err error) {
 func (cli *Client) ToJSON(o interface{}) (result string) {
 	oj, _ := json.Marshal(o)
 	result = string(oj)
-	if DEBUG {
-		log.Printf(":: %s\n", result)
-	}
 	return
 }
 
@@ -219,7 +184,6 @@ func (cli *Client) SetCookie(name, value string) {
 
 	u, _ := url.Parse(urlLogin)
 	var cookies []*http.Cookie
-	// cookies := cli.http.Jar.Cookies(u)
 	cookies = append(cookies, cookie)
 	cli.http.Jar.SetCookies(u, cookies)
 	cli.GetCurrentInfo()
@@ -227,8 +191,6 @@ func (cli *Client) SetCookie(name, value string) {
 
 // GetRegions to get client regions
 func GetRegions() (regions []Region, err error) {
-	// Get kladr - https://my.dnevnik76.ru/ajax/kladr/?login=true
-	// 1. get region - select > option
 	resp, err := http.Get(fmt.Sprintf("%s/kladr/?login=true", urlAjax))
 	if err != nil {
 		return
@@ -312,7 +274,6 @@ func (cli *Client) GetMarksPeriods() (periods []Lperiod, err error) {
 			title := strings.TrimSpace(s2.Text())
 			value, _ := s2.Attr("value")
 			period := Lperiod{
-				// RegionID: cli.currentInfo.RegionID,
 				SchoolID: cli.currentInfo.SchoolID,
 				SYear:    cli.currentInfo.EduYearStart,
 				EYear:    cli.currentInfo.EduYearEnd,
@@ -403,9 +364,6 @@ func (cli *Client) GetMarksForMonthWithType(p string, t MarksListType) (marks []
 					mark.Date = russiantime.ParseDateString(d)
 					mark.Grade = append(mark.Grade, int8(pm))
 					marks = append(marks, mark)
-					if DEBUG {
-						log.Printf("course - %s, d - %s, mark - %d", mark.CourseName, mark.Date, pm)
-					}
 				}
 			})
 		})
@@ -429,19 +387,9 @@ func (cli *Client) GetMarksFinal() (marks []Mark, err error) {
 	if err != nil {
 		return
 	}
-	title := doc.Find("#content > h3").Text()
-
-	ret := regexp.MustCompile(`([^"]*)(\d{4}\s\-\s\d{4})([^"]*)`)
-	lrange := ret.ReplaceAllString(title, "${2}")
-	if DEBUG {
-		log.Printf("%s", lrange)
-	}
-
+	courses, _ := cli.GetCourses()
 	doc.Find("#marks > #wrap-col > #wrap-marks > div > #mark-row").Each(func(i int, s *goquery.Selection) {
 		courseID, _ := s.Attr("name")
-		if DEBUG {
-			log.Printf("course id - %s", courseID)
-		}
 
 		s.Find(".mark").Each(func(j int, sj *goquery.Selection) {
 			mark := Mark{}
@@ -450,6 +398,12 @@ func (cli *Client) GetMarksFinal() (marks []Mark, err error) {
 			mark.UserID = cli.Username
 			mark.SchoolID = cli.SchoolID
 			mark.CourseID, _ = strconv.ParseInt(courseID, 10, 32)
+			for _, c := range courses {
+				if c.ID == mark.CourseID {
+					mark.CourseName = c.Name
+					break
+				}
+			}
 			data := func() (period string, fmark string) {
 				el := sj.Find("a").First()
 				onClick, _ := el.Attr("onclick")
@@ -604,9 +558,6 @@ func (cli *Client) GetHomework() (hws []Homework, err error) {
 	classIDText, _ := doc.Find("body").Attr("onload")
 	if classIDText != "" {
 		classIDText = strings.TrimRight(strings.TrimLeft(classIDText, "loadSubjects('/ajax/subj/"), "', true)")
-		if DEBUG {
-			log.Printf("class_id - %s\n", classIDText)
-		}
 	}
 	classID, err := strconv.ParseInt(classIDText, 10, 64)
 	hwPagesFlag := doc.Find("#homework_list > div.pager > span.page_remark").Text()
