@@ -14,7 +14,7 @@ type Client struct {
 	SchoolID    int64        `json:"schoolId" xorm:"'school_id'"`
 	Token       string       `json:"token"`
 	http        *http.Client `xorm:"-"`
-	currentInfo CurrentInfo  `xorm:"-"`
+	CurrentInfo CurrentInfo  `xorm:"-"`
 }
 
 // CurrentInfo struct
@@ -105,8 +105,8 @@ func (p Lperiod) String() string {
 type Mark struct {
 	ID         int64     `json:"id" xorm:"pk autoincr 'id'"`
 	UserID     string    `json:"userId" xorm:"'user_id'"`
-	SchoolID   int64     `json:"schoolId" xorm:"'school_id'"`
-	CourseID   int64     `json:"courseId" xorm:"'course_id'"`
+	SchoolID   int64     `json:"school_id" xorm:"'school_id'"`
+	CourseID   int64     `json:"course_id" xorm:"'course_id'"`
 	CourseName string    `json:"courseName"`
 	Subject    string    `json:"subject"`
 	HomeWork   string    `json:"homework"`
@@ -127,6 +127,12 @@ func (m Mark) String() string {
 
 	return string(out)
 }
+
+type MarksByDate []Mark
+
+func (a MarksByDate) Len() int           { return len(a) }
+func (a MarksByDate) Less(i, j int) bool { return a[i].Date.Before(a[j].Date) }
+func (a MarksByDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 // Message struct
 type Message struct {

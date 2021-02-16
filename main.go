@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 
-	// "io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -76,7 +75,7 @@ func NewClient(login string, password string, schoolID int64, httpClient *http.C
 		Password:    password,
 		SchoolID:    schoolID,
 		http:        httpClient,
-		currentInfo: ci,
+		CurrentInfo: ci,
 	}
 
 	return cli
@@ -122,39 +121,39 @@ func (cli *Client) Login() (err error) {
 		return
 	}
 
-	err = cli.GetCurrentInfo()
+	err = cli.getCurrentInfo()
 
 	return
 }
 
-// GetCurrentInfo for session
-func (cli *Client) GetCurrentInfo() (err error) {
+// getCurrentInfo for session
+func (cli *Client) getCurrentInfo() (err error) {
 	resp, err := cli.http.Get(urlHomework)
 	doc, err := goquery.NewDocumentFromResponse(resp)
 
-	cli.currentInfo.SchoolID = cli.SchoolID
+	cli.CurrentInfo.SchoolID = cli.SchoolID
 	classNumber, classChar, err := getClassName(doc.Find("#auth_info > #role").Text())
 	if err != nil {
 		return
 	}
-	cli.currentInfo.ClassNumber = classNumber
-	cli.currentInfo.ClassChar = classChar
+	cli.CurrentInfo.ClassNumber = classNumber
+	cli.CurrentInfo.ClassChar = classChar
 
 	classIDText, _ := doc.Find("body").Attr("onload")
 	if classIDText != "" {
 		classIDText = strings.TrimRight(strings.TrimLeft(classIDText, "loadSubjects('/ajax/subj/"), "', true)")
 	}
 	classID, err := strconv.ParseInt(classIDText, 10, 32)
-	cli.currentInfo.ClassID = classID
+	cli.CurrentInfo.ClassID = classID
 
 	var eys, eye int64
 	eyr := strings.Split(strings.TrimRight(doc.Find("#eduyear > #curedy").Text(), " учебный год"), "-")
 	eys, _ = strconv.ParseInt(eyr[0], 10, 32)
 	eye, _ = strconv.ParseInt(eyr[1], 10, 32)
-	cli.currentInfo.EduYearStart = int(eys)
-	cli.currentInfo.EduYearEnd = int(eye)
+	cli.CurrentInfo.EduYearStart = int(eys)
+	cli.CurrentInfo.EduYearEnd = int(eye)
 
-	cli.ToJSON(cli.currentInfo)
+	cli.ToJSON(cli.CurrentInfo)
 
 	return
 }
@@ -186,7 +185,7 @@ func (cli *Client) SetCookie(name, value string) {
 	var cookies []*http.Cookie
 	cookies = append(cookies, cookie)
 	cli.http.Jar.SetCookies(u, cookies)
-	cli.GetCurrentInfo()
+	cli.getCurrentInfo()
 }
 
 // GetRegions to get client regions
@@ -237,7 +236,7 @@ func GetSchools(region int64) (schools []School, err error) {
 
 // GetCourses to get subjects
 func (cli *Client) GetCourses() (courses []Course, err error) {
-	resp, err := cli.http.Get(fmt.Sprintf("%s/subj/%d", urlAjax, cli.currentInfo.ClassID))
+	resp, err := cli.http.Get(fmt.Sprintf("%s/subj/%d", urlAjax, cli.CurrentInfo.ClassID))
 	if err != nil {
 		return
 	}
@@ -274,9 +273,9 @@ func (cli *Client) GetMarksPeriods() (periods []Lperiod, err error) {
 			title := strings.TrimSpace(s2.Text())
 			value, _ := s2.Attr("value")
 			period := Lperiod{
-				SchoolID: cli.currentInfo.SchoolID,
-				SYear:    cli.currentInfo.EduYearStart,
-				EYear:    cli.currentInfo.EduYearEnd,
+				SchoolID: cli.CurrentInfo.SchoolID,
+				SYear:    cli.CurrentInfo.EduYearStart,
+				EYear:    cli.CurrentInfo.EduYearEnd,
 				Name:     title,
 				Period:   value,
 			}
@@ -288,16 +287,16 @@ func (cli *Client) GetMarksPeriods() (periods []Lperiod, err error) {
 
 // GetMarksCurrent to get marks for current month
 func (cli *Client) GetMarksCurrent() (marks []Mark, err error) {
-	return cli.GetMarksForMonthWithType("", Note)
+	return cli.GetMarksForWithType("", Note)
 }
 
-// GetMarksForMonth to get marks for specific month
-func (cli *Client) GetMarksForMonth(p string) (marks []Mark, err error) {
-	return cli.GetMarksForMonthWithType(p, Note)
+// GetMarksFor to get marks for specific month
+func (cli *Client) GetMarksFor(p string) (marks []Mark, err error) {
+	return cli.GetMarksForWithType(p, Note)
 }
 
-// GetMarksForMonthWithType to get user marks
-func (cli *Client) GetMarksForMonthWithType(p string, t MarksListType) (marks []Mark, err error) {
+// GetMarksForWithType to get user marks
+func (cli *Client) GetMarksForWithType(p string, t MarksListType) (marks []Mark, err error) {
 	var sp string
 	if p != "" {
 		sp = fmt.Sprintf("%s/%s/", p, t.String())
@@ -314,6 +313,8 @@ func (cli *Client) GetMarksForMonthWithType(p string, t MarksListType) (marks []
 	if err != nil {
 		return
 	}
+	rpt := regexp.MustCompile(`(\r\n)+|\r+|\n+|\t+|\s+`)
+	log.Printf("page title - %s", rpt.ReplaceAllString(doc.Find("#content > h3").First().Text(), " "))
 	switch t {
 	case Note:
 		doc.Find("#marks > div.week").Each(func(i int, s *goquery.Selection) {
@@ -322,8 +323,8 @@ func (cli *Client) GetMarksForMonthWithType(p string, t MarksListType) (marks []
 				table := s2.Find("table")
 				table.Find("tbody > tr").Each(func(k int, tr *goquery.Selection) {
 					mark := Mark{}
-					mark.SYear = cli.currentInfo.EduYearStart
-					mark.EYear = cli.currentInfo.EduYearEnd
+					mark.SYear = cli.CurrentInfo.EduYearStart
+					mark.EYear = cli.CurrentInfo.EduYearEnd
 					mark.UserID = cli.Username
 					mark.SchoolID = cli.SchoolID
 					pd := strings.Split(strings.TrimRight(title, ")"), " (")
@@ -353,8 +354,8 @@ func (cli *Client) GetMarksForMonthWithType(p string, t MarksListType) (marks []
 			s.Find("span.mark").Each(func(j int, sj *goquery.Selection) {
 				if !sj.HasClass("avg") {
 					mark := Mark{}
-					mark.SYear = cli.currentInfo.EduYearStart
-					mark.EYear = cli.currentInfo.EduYearEnd
+					mark.SYear = cli.CurrentInfo.EduYearStart
+					mark.EYear = cli.CurrentInfo.EduYearEnd
 					mark.CourseName = courseName
 					el := sj.Find("a").First()
 					onClick, _ := el.Attr("onclick")
@@ -393,8 +394,8 @@ func (cli *Client) GetMarksFinal() (marks []Mark, err error) {
 
 		s.Find(".mark").Each(func(j int, sj *goquery.Selection) {
 			mark := Mark{}
-			mark.SYear = cli.currentInfo.EduYearStart
-			mark.EYear = cli.currentInfo.EduYearEnd
+			mark.SYear = cli.CurrentInfo.EduYearStart
+			mark.EYear = cli.CurrentInfo.EduYearEnd
 			mark.UserID = cli.Username
 			mark.SchoolID = cli.SchoolID
 			mark.CourseID, _ = strconv.ParseInt(courseID, 10, 32)
@@ -550,7 +551,7 @@ func (cli *Client) GetHomework() (hws []Homework, err error) {
 		return
 	}
 
-	err = cli.GetCurrentInfo()
+	err = cli.getCurrentInfo()
 	if err != nil {
 		return
 	}

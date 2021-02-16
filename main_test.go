@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -33,7 +34,7 @@ func TestClient_Login(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	t.Logf("client.GetCurrentInfo() - %#v", client.currentInfo)
+	t.Logf("client.getCurrentInfo() - %#v", client.CurrentInfo)
 }
 
 func TestClient_GetRegions(t *testing.T) {
@@ -79,7 +80,7 @@ func TestClient_GetMarksPeriods(t *testing.T) {
 }
 
 func TestClient_GetMarksNote(t *testing.T) {
-	marks, _ := client.GetMarksForMonthWithType(Month1.String(), Note)
+	marks, _ := client.GetMarksForWithType(Month1.String(), Note)
 	t.Logf(":: size - %d", len(marks))
 	if DEBUG {
 		for _, m := range marks {
@@ -89,9 +90,12 @@ func TestClient_GetMarksNote(t *testing.T) {
 }
 
 func TestClient_GetMarksList(t *testing.T) {
-	marks, _ := client.GetMarksForMonthWithType(Month1.String(), List)
+	marks, _ := client.GetMarksForWithType(Month2.String(), List)
+	//marks, _ := client.GetMarksForWithType("edurng7639", List)
 	t.Logf(":: size - %d", len(marks))
 	if DEBUG {
+		//sort.Slice(marks, func(i, j int) bool { return marks[i].Date.After(marks[j].Date) })
+		sort.Sort(sort.Reverse(MarksByDate(marks)))
 		for _, m := range marks {
 			t.Logf("%s: %s - %s", m.Date.Format("2006.01.02"), m.CourseName, arrayToString(m.Grade, ","))
 		}
@@ -162,14 +166,14 @@ func TestClient_GetCourses(t *testing.T) {
 	t.Logf(":: size for 2020 - %d", len(courses))
 
 	client.SetCookie("edu_year", "2019")
-	client.GetCurrentInfo()
+	client.getCurrentInfo()
 	client.GetMarksPeriods()
 	courses2019, _ := client.GetCourses()
 	courses = append(courses, courses2019...)
 	t.Logf(":: size for 2019 - %d", len(courses2019))
 
 	client.SetCookie("edu_year", "2018")
-	client.GetCurrentInfo()
+	client.getCurrentInfo()
 	client.GetMarksPeriods()
 	courses2018, _ := client.GetCourses()
 	courses = append(courses, courses2018...)
