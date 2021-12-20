@@ -85,11 +85,13 @@ type Homework struct {
 
 // Lperiod struct
 type Lperiod struct {
-	SchoolID int64  `json:"schoolId" xorm:"'school_id'"`
-	SYear    int    `json:"start_year"`
-	EYear    int    `json:"end_year"`
-	Name     string `json:"name"`
-	Period   string `json:"period"`
+	SchoolID int64     `json:"schoolId" xorm:"'school_id'"`
+	SYear    int       `json:"start_year"`
+	EYear    int       `json:"end_year"`
+	Name     string    `json:"name"`
+	Period   string    `json:"period"`
+	Start    time.Time `json:"start"`
+	End      time.Time `json:"end"`
 }
 
 func (p Lperiod) String() string {

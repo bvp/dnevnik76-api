@@ -272,12 +272,33 @@ func (cli *Client) GetMarksPeriods() (periods []Lperiod, err error) {
 		s.Find("option").Each(func(i int, s2 *goquery.Selection) {
 			title := strings.TrimSpace(s2.Text())
 			value, _ := s2.Attr("value")
+
+			var resp *http.Response
+			resp, err = cli.http.Get(fmt.Sprintf("%s%s/note", urlMarksCurrent, value))
+			if err != nil {
+				return
+			}
+
+			doc, err := goquery.NewDocumentFromResponse(resp)
+			if err != nil {
+				return
+			}
+			re := regexp.MustCompile(`(?P<start>(\d{1,2}\s[\p{L}]+\s\d{4}\sг\.)) по (?P<end>(\d{1,2}\s[\p{L}]+\s\d{4}\sг\.))`)
+			n1 := re.SubexpNames()
+			result := re.FindStringSubmatch(doc.Find("#content > h3").First().Text())
+			m := map[string]string{}
+			for i, n := range result {
+				m[n1[i]] = n
+			}
+
 			period := Lperiod{
 				SchoolID: cli.CurrentInfo.SchoolID,
 				SYear:    cli.CurrentInfo.EduYearStart,
 				EYear:    cli.CurrentInfo.EduYearEnd,
 				Name:     title,
 				Period:   value,
+				Start:    russiantime.ParseDateString(m["start"]),
+				End:      russiantime.ParseDateString(m["end"]),
 			}
 			periods = append(periods, period)
 		})

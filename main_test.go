@@ -74,7 +74,7 @@ func TestClient_GetMarksPeriods(t *testing.T) {
 	t.Logf(":: size - %d", len(periods))
 	if DEBUG {
 		for _, p := range periods {
-			t.Logf(":: %d-%d: %s - %s", p.SYear, p.EYear, p.Name, p.Period)
+			t.Logf(":: %d-%d: %s - %s (%s - %s)", p.SYear, p.EYear, p.Name, p.Period, p.Start.Format("2006.01.02"), p.End.Format("2006.01.02"))
 		}
 	}
 }
