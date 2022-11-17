@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -75,6 +76,12 @@ func TestClient_GetMarksPeriods(t *testing.T) {
 	if DEBUG {
 		for _, p := range periods {
 			t.Logf(":: %d-%d: %s - %s (%s - %s)", p.SYear, p.EYear, p.Name, p.Period, p.Start.Format("2006.01.02"), p.End.Format("2006.01.02"))
+			inRange := dateWithinRange(time.Now(), p.Start, p.End)
+			if inRange {
+				if strings.Contains(p.Name, "четверть") {
+					t.Logf("in range - %t: %s - %s (%s - %s)", inRange, p.Name, p.Period, p.Start.Format("2006.01.02"), p.End.Format("2006.01.02"))
+				}
+			}
 		}
 	}
 }
@@ -90,14 +97,21 @@ func TestClient_GetMarksNote(t *testing.T) {
 }
 
 func TestClient_GetMarksList(t *testing.T) {
-	marks, _ := client.GetMarksForWithType(Month2.String(), List)
-	//marks, _ := client.GetMarksForWithType("edurng7639", List)
+	// marks, _ := client.GetMarksForWithType(fmt.Sprintf("month%d", time.Now().Month()), List)
+	marks, _ := client.GetMarksForWithType(client.GetCurrentQuarter(), List)
 	t.Logf(":: size - %d", len(marks))
 	if DEBUG {
-		//sort.Slice(marks, func(i, j int) bool { return marks[i].Date.After(marks[j].Date) })
-		sort.Sort(sort.Reverse(MarksByDate(marks)))
+		sort.Sort(MarksByDate(marks))
+
+		_marks := map[string][]string{}
+
 		for _, m := range marks {
 			t.Logf("%s: %s - %s", m.Date.Format("2006.01.02"), m.CourseName, arrayToString(m.Grade, ","))
+			_marks[m.CourseName] = append(_marks[m.CourseName], arrayToString(m.Grade, ","))
+		}
+
+		for c, m := range _marks {
+			t.Logf("%s: %s", c, m)
 		}
 	}
 }
@@ -159,25 +173,15 @@ func TestClient_GetCourses(t *testing.T) {
 	courses, _ := client.GetCourses()
 	t.Logf(":: size - %d", len(courses))
 
-	client.SetCookie("edu_year", "2020")
-	client.GetMarksPeriods()
-	courses2020, _ := client.GetCourses()
-	courses = append(courses, courses2020...)
-	t.Logf(":: size for 2020 - %d", len(courses))
-
-	client.SetCookie("edu_year", "2019")
-	client.getCurrentInfo()
-	client.GetMarksPeriods()
-	courses2019, _ := client.GetCourses()
-	courses = append(courses, courses2019...)
-	t.Logf(":: size for 2019 - %d", len(courses2019))
-
-	client.SetCookie("edu_year", "2018")
-	client.getCurrentInfo()
-	client.GetMarksPeriods()
-	courses2018, _ := client.GetCourses()
-	courses = append(courses, courses2018...)
-	t.Logf(":: size for 2018 - %d", len(courses2018))
+	years := []string{"2022", "2021", "2020", "2019", "2018"}
+	for _, y := range years {
+		client.SetCookie("edu_year", y)
+		client.getCurrentInfo()
+		client.GetMarksPeriods()
+		coursesX, _ := client.GetCourses()
+		courses = append(courses, coursesX...)
+		t.Logf(":: size for %s - %d", y, len(courses))
+	}
 
 	courses = unique(courses)
 	t.Logf(":: total size - %d", len(courses))
@@ -188,19 +192,8 @@ func TestClient_GetCourses(t *testing.T) {
 	}
 }
 
-func TestClient_GetHomework2020(t *testing.T) {
-	client.SetCookie("edu_year", "2020")
-	hws, _ := client.GetHomework()
-	t.Logf(":: size - %d", len(hws))
-	if DEBUG {
-		for _, hw := range hws {
-			t.Logf("  :: %s: %s - subject: %s, homework: %s", hw.Date.Format("2006.01.02"), hw.CourseName, hw.Subject, hw.Homework)
-		}
-	}
-}
-
-func TestClient_GetHomework2019(t *testing.T) {
-	client.SetCookie("edu_year", "2019")
+func TestClient_GetHomework2022(t *testing.T) {
+	client.SetCookie("edu_year", "2022")
 	hws, _ := client.GetHomework()
 	t.Logf(":: size - %d", len(hws))
 	if DEBUG {

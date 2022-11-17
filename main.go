@@ -10,6 +10,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"time"
 
 	"net/http"
 	"net/http/cookiejar"
@@ -31,6 +32,9 @@ const (
 	urlMarksFinal   = "https://my.dnevnik76.ru/marks/itog/"
 	urlMessages     = "https://my.dnevnik76.ru/messages/input"
 	urlTeachers     = "https://my.dnevnik76.ru/teachers/"
+
+	sLoadSubjectsS = "loadSubjects('/ajax/subj/"
+	sLoadSubjectsE = "', true)"
 )
 
 var (
@@ -88,7 +92,7 @@ func (cli *Client) Login() (err error) {
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -116,10 +120,10 @@ func (cli *Client) Login() (err error) {
 	}
 	defer resp.Body.Close()
 
-	doc, err = goquery.NewDocumentFromResponse(resp)
-	if err != nil {
-		return
-	}
+	// doc, err = goquery.NewDocumentFromReader(resp.Body)
+	// if err != nil {
+	// 	return
+	// }
 
 	err = cli.getCurrentInfo()
 
@@ -129,7 +133,13 @@ func (cli *Client) Login() (err error) {
 // getCurrentInfo for session
 func (cli *Client) getCurrentInfo() (err error) {
 	resp, err := cli.http.Get(urlHomework)
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	if err != nil {
+		return
+	}
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return
+	}
 
 	cli.CurrentInfo.SchoolID = cli.SchoolID
 	classNumber, classChar, err := getClassName(doc.Find("#auth_info > #role").Text())
@@ -141,13 +151,13 @@ func (cli *Client) getCurrentInfo() (err error) {
 
 	classIDText, _ := doc.Find("body").Attr("onload")
 	if classIDText != "" {
-		classIDText = strings.TrimRight(strings.TrimLeft(classIDText, "loadSubjects('/ajax/subj/"), "', true)")
+		classIDText = strings.TrimSuffix(strings.TrimPrefix(classIDText, sLoadSubjectsS), sLoadSubjectsE)
 	}
 	classID, err := strconv.ParseInt(classIDText, 10, 32)
 	cli.CurrentInfo.ClassID = classID
 
 	var eys, eye int64
-	eyr := strings.Split(strings.TrimRight(doc.Find("#eduyear > #curedy").Text(), " учебный год"), "-")
+	eyr := strings.Split(strings.TrimSuffix(doc.Find("#eduyear > #curedy").Text(), " учебный год"), "-")
 	eys, _ = strconv.ParseInt(eyr[0], 10, 32)
 	eye, _ = strconv.ParseInt(eyr[1], 10, 32)
 	cli.CurrentInfo.EduYearStart = int(eys)
@@ -195,7 +205,7 @@ func GetRegions() (regions []Region, err error) {
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -218,7 +228,7 @@ func GetSchools(region int64) (schools []School, err error) {
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -234,6 +244,27 @@ func GetSchools(region int64) (schools []School, err error) {
 	return
 }
 
+func dateWithinRange(date, start, end time.Time) bool {
+	if date.After(start) && date.Before(end) {
+		return true
+	}
+	return false
+}
+
+func (cli *Client) GetCurrentQuarter() (result string) {
+	periods, _ := cli.GetMarksPeriods()
+	for _, p := range periods {
+		inRange := dateWithinRange(time.Now(), p.Start, p.End)
+		if inRange {
+			if strings.Contains(p.Name, "четверть") {
+				result = p.Period
+				break
+			}
+		}
+	}
+	return
+}
+
 // GetCourses to get subjects
 func (cli *Client) GetCourses() (courses []Course, err error) {
 	resp, err := cli.http.Get(fmt.Sprintf("%s/subj/%d", urlAjax, cli.CurrentInfo.ClassID))
@@ -241,7 +272,7 @@ func (cli *Client) GetCourses() (courses []Course, err error) {
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -264,7 +295,7 @@ func (cli *Client) GetMarksPeriods() (periods []Lperiod, err error) {
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -279,7 +310,7 @@ func (cli *Client) GetMarksPeriods() (periods []Lperiod, err error) {
 				return
 			}
 
-			doc, err := goquery.NewDocumentFromResponse(resp)
+			doc, err := goquery.NewDocumentFromReader(resp.Body)
 			if err != nil {
 				return
 			}
@@ -330,7 +361,7 @@ func (cli *Client) GetMarksForWithType(p string, t MarksListType) (marks []Mark,
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -405,7 +436,7 @@ func (cli *Client) GetMarksFinal() (marks []Mark, err error) {
 		return
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -481,7 +512,7 @@ func (cli *Client) GetMessages() (messages []Message, err error) {
 	if err != nil {
 		return
 	}
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -529,12 +560,12 @@ func (cli *Client) GetMessage(msgID int64) (m Message, err error) {
 	if err != nil {
 		return
 	}
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
 
-	msgDate := strings.TrimLeft(doc.Find("#msgview > div.msg-meta > div.msg-props > div:nth-child(1)").First().Text(), "Дата: ")
+	msgDate := strings.TrimPrefix(doc.Find("#msgview > div.msg-meta > div.msg-props > div:nth-child(1)").First().Text(), "Дата: ")
 	m.Date = russiantime.ParseDateString(msgDate)
 	msgFrom := doc.Find("#msgview > div.msg-meta > div.msg-props > div:nth-child(2) > a:nth-child(2)").First().Text()
 	m.From = msgFrom
@@ -567,7 +598,7 @@ func (cli *Client) GetHomework() (hws []Homework, err error) {
 	if err != nil {
 		return
 	}
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
@@ -579,7 +610,7 @@ func (cli *Client) GetHomework() (hws []Homework, err error) {
 
 	classIDText, _ := doc.Find("body").Attr("onload")
 	if classIDText != "" {
-		classIDText = strings.TrimRight(strings.TrimLeft(classIDText, "loadSubjects('/ajax/subj/"), "', true)")
+		classIDText = strings.TrimRight(strings.TrimPrefix(classIDText, sLoadSubjectsS), sLoadSubjectsE)
 	}
 	classID, err := strconv.ParseInt(classIDText, 10, 64)
 	hwPagesFlag := doc.Find("#homework_list > div.pager > span.page_remark").Text()
@@ -617,7 +648,7 @@ func (cli *Client) GetTeachers() (teachers []Teacher, err error) {
 	if err != nil {
 		return
 	}
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return
 	}
