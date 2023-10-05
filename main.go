@@ -46,7 +46,7 @@ var (
 func NewClient(login string, password string, schoolID int64, httpClient *http.Client) *Client {
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
-		log.Fatalf("NewClient error - %s", err)
+		log.Fatal(err)
 	}
 
 	ci := CurrentInfo{}
@@ -250,18 +250,16 @@ func dateWithinRange(date, start, end time.Time) bool {
 }
 
 func (cli *Client) GetCurrentQuarter() (result string) {
+	list := []string{"четверть", "полугодие"}
 	periods, _ := cli.GetMarksPeriods()
 	for _, p := range periods {
 		inRange := dateWithinRange(time.Now(), p.Start, p.End)
 		if inRange {
-			if strings.Contains(p.Name, "четверть") {
-				result = p.Period
-				break
-			}
-		} else {
-			if strings.Contains(p.Name, "полугодие") {
-				result = p.Period
-				break
+			for _, s := range list {
+				if strings.Contains(p.Name, s) {
+					result = p.Period
+					break
+				}
 			}
 		}
 	}
