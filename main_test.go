@@ -221,7 +221,7 @@ func setup() {
 	cfg = config{}
 	_ = json.Unmarshal([]byte(file), &cfg)
 
-	client = NewClient(cfg.Login, cfg.Password, cfg.SchoolID, nil)
+	client = NewClient(cfg.Login, cfg.Password, cfg.RegionID, cfg.SchoolID, nil)
 	err := client.Login()
 	if err != nil {
 		log.Fatal(err.Error())

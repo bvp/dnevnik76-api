@@ -11,6 +11,7 @@ import (
 type Client struct {
 	Username    string       `json:"login"`
 	Password    string       `json:"password"`
+	RegionID    int64        `json:"region_id"`
 	SchoolID    int64        `json:"schoolId" xorm:"'school_id'"`
 	Token       string       `json:"token"`
 	http        *http.Client `xorm:"-"`
@@ -20,7 +21,9 @@ type Client struct {
 // CurrentInfo struct
 type CurrentInfo struct {
 	//PersonID     int64  `json:"personId" xorm:"'person_id'"`
+	RegionID     int64  `json:"regionId" xorm:"'region_id'"`
 	SchoolID     int64  `json:"schoolId" xorm:"'school_id'"`
+	SchoolName   string `json:"schoolName"`
 	ClassID      int64  `json:"clsId" xorm:"'class_id'"`
 	Class        string `json:"cls"`
 	EduYearStart int    `json:"eduYearStart"`

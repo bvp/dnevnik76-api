@@ -43,14 +43,21 @@ var (
 )
 
 // NewClient create new client
-func NewClient(login string, password string, schoolID int64, httpClient *http.Client) *Client {
+func NewClient(login string, password string, regionID int64, schoolID int64, httpClient *http.Client) *Client {
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ci := CurrentInfo{}
+	ci.RegionID = regionID
 	ci.SchoolID = schoolID
+	schools, _ := GetSchools(regionID)
+	for _, s := range schools {
+		if s.ID == schoolID {
+			ci.SchoolName = s.Name
+		}
+	}
 
 	cookie := &http.Cookie{
 		Name:   "items_perpage",
