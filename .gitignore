@@ -1,7 +1,7 @@
 .idea
 .vscode
 
-config_test.json
+config_test*.json
 *~
 *.bak
 *.dll

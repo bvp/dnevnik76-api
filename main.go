@@ -4,9 +4,8 @@ package dnevnik76
 import (
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"regexp"
 	"strconv"
@@ -47,7 +46,7 @@ var (
 func NewClient(login string, password string, schoolID int64, httpClient *http.Client) *Client {
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("NewClient error - %s", err)
 	}
 
 	ci := CurrentInfo{}
@@ -142,12 +141,11 @@ func (cli *Client) getCurrentInfo() (err error) {
 	}
 
 	cli.CurrentInfo.SchoolID = cli.SchoolID
-	classNumber, classChar, err := getClassName(doc.Find("#auth_info > #role").Text())
+	class, err := getClassName(doc.Find("#auth_info > #role").Text())
 	if err != nil {
 		return
 	}
-	cli.CurrentInfo.ClassNumber = classNumber
-	cli.CurrentInfo.ClassChar = classChar
+	cli.CurrentInfo.Class = class
 
 	classIDText, _ := doc.Find("body").Attr("onload")
 	if classIDText != "" {
@@ -257,6 +255,11 @@ func (cli *Client) GetCurrentQuarter() (result string) {
 		inRange := dateWithinRange(time.Now(), p.Start, p.End)
 		if inRange {
 			if strings.Contains(p.Name, "четверть") {
+				result = p.Period
+				break
+			}
+		} else {
+			if strings.Contains(p.Name, "полугодие") {
 				result = p.Period
 				break
 			}
@@ -496,7 +499,7 @@ func (cli *Client) GetMessagesCount() (unread int, total int, err error) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
@@ -575,20 +578,10 @@ func (cli *Client) GetMessage(msgID int64) (m Message, err error) {
 	return
 }
 
-func getClassName(s string) (classNumber int, classChar string, err error) {
-	re, err := regexp.Compile(`\s?\n\s+Учащийся\n\s+\((\d+) "(.)"\)\n\s+`)
-	if err != nil {
-		return
-	}
-	matches := re.FindStringSubmatch(s)
-	if len(matches) > 1 {
-		clsNum, _ := strconv.ParseInt(matches[1], 10, 32)
-		classNumber = int(clsNum)
-		classChar = re.FindStringSubmatch(s)[2]
-	} else {
-		return 0, "", errors.New("match size less or equal then 1")
-	}
-
+func getClassName(s string) (class string, err error) {
+	re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+	final := re_inside_whtsp.ReplaceAllString(strings.TrimSpace(s), " ")
+	class = strings.TrimLeft(strings.TrimRight(final, ")"), "Учащийся (")
 	return
 }
 

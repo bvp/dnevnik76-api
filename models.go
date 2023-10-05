@@ -22,8 +22,7 @@ type CurrentInfo struct {
 	//PersonID     int64  `json:"personId" xorm:"'person_id'"`
 	SchoolID     int64  `json:"schoolId" xorm:"'school_id'"`
 	ClassID      int64  `json:"clsId" xorm:"'class_id'"`
-	ClassNumber  int    `json:"clsNum"`
-	ClassChar    string `json:"clsChr"`
+	Class        string `json:"cls"`
 	EduYearStart int    `json:"eduYearStart"`
 	EduYearEnd   int    `json:"eduYearEnd"`
 }

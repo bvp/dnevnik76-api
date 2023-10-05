@@ -3,7 +3,6 @@ package dnevnik76
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -173,7 +172,7 @@ func TestClient_GetCourses(t *testing.T) {
 	courses, _ := client.GetCourses()
 	t.Logf(":: size - %d", len(courses))
 
-	years := []string{"2022", "2021", "2020", "2019", "2018"}
+	years := []string{"2023", "2022", "2021", "2020", "2019", "2018"}
 	for _, y := range years {
 		client.SetCookie("edu_year", y)
 		client.getCurrentInfo()
@@ -218,7 +217,7 @@ func TestClient_GetTeachers(t *testing.T) {
 
 func setup() {
 	DEBUG = true
-	file, _ := ioutil.ReadFile("config_test.json")
+	file, _ := os.ReadFile("config_test.json")
 	cfg = config{}
 	_ = json.Unmarshal([]byte(file), &cfg)
 
